@@ -1,7 +1,8 @@
 from typing import Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
 
 app = FastAPI()
 
@@ -34,4 +35,5 @@ def pythagorean(a: int | None = None, b: int | None = None, c:int | None = None)
         return {"result": (c**2 - a**2)**0.5}
     elif b and c:
         return {"result": (c**2 - b**2)**0.5}
-    return {"result": "Invalid input"}
+    raise HTTPException(status_code=400, detail="Invalid input")
+
