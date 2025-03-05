@@ -3,11 +3,16 @@ from typing import Union
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from time import sleep as wait
+import threading
+
 
 app = FastAPI()
 
 db = {}
 pythagorean_cache = {}
+
+cacheTimer = 10
 
 
 class Item(BaseModel):
@@ -42,16 +47,30 @@ def pythagorean(a: int | None = None, b: int | None = None, c:int | None = None)
     
     if key in pythagorean_cache:
         #cache time hehe
-        return pythagorean_cache[key], "this was in a cache!"
+        return pythagorean_cache[key][0], "this was in a cache!"
 
     if a and b:
         # add to cache
-        pythagorean_cache[key] = (a**2 + b**2)**0.5
+        pythagorean_cache[key] = ((a**2 + b**2)**0.5, cacheTimer)
         return {"result": (a**2 + b**2)**0.5}
     elif a and c:
-        pythagorean_cache[key] = (c**2 - a**2)**0.5
+        pythagorean_cache[key] = ((c**2 - a**2)**0.5, cacheTimer)
         return {"result": (c**2 - a**2)**0.5}
     elif b and c:
-        pythagorean_cache[key] = (c**2 - b**2)**0.5
+        pythagorean_cache[key] = ((c**2 - b**2)**0.5, cacheTimer)
         return {"result": (c**2 - b**2)**0.5}
     raise HTTPException(status_code=400, detail="Invalid input")
+
+def cache_cleaner():
+    while True:
+        wait(1)
+        # runs every second to decrease the cachetimer and remove the old posts
+        for key in list(pythagorean_cache.keys()):
+            pythagorean_cache[key] = (pythagorean_cache[key][0], pythagorean_cache[key][1] - 1)
+            if pythagorean_cache[key][1] <= 0:
+                # remove cache
+                print(f"Removed cache {key}, {pythagorean_cache[key][0]}")
+                pythagorean_cache.pop(key)
+
+# Start the cache cleaner in a new thread
+threading.Thread(target=cache_cleaner, daemon=True).start()
