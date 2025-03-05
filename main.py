@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 
 app = FastAPI()
-print("Hello world")
 
 db = {}
 pythagorean_cache = {}
