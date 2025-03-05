@@ -10,7 +10,7 @@ import threading
 app = FastAPI()
 
 db = {}
-pythagorean_cache = {}
+pythagorean_cache = dict()
 
 cacheTimer = 10
 
@@ -19,6 +19,10 @@ class Item(BaseModel):
     name: str
     price: float
     is_offer: Union[bool, None] = None
+
+class pytCache(BaseModel):
+    answer: float
+    timer: int
 
 
 @app.get("/")
@@ -47,18 +51,21 @@ def pythagorean(a: int | None = None, b: int | None = None, c:int | None = None)
     
     if key in pythagorean_cache:
         #cache time hehe
-        return pythagorean_cache[key][0], "this was in a cache!"
+        return pythagorean_cache[key].answer, "this was in a cache!"
 
     if a and b:
         # add to cache
-        pythagorean_cache[key] = ((a**2 + b**2)**0.5, cacheTimer)
-        return {"result": (a**2 + b**2)**0.5}
+        answer: float = (a**2 + b**2)**0.5 
+        pythagorean_cache[key] = pytCache(answer=answer, timer=cacheTimer)
+        return {"result": answer}
     elif a and c:
-        pythagorean_cache[key] = ((c**2 - a**2)**0.5, cacheTimer)
-        return {"result": (c**2 - a**2)**0.5}
+        answer : float = (c**2 - a**2)**0.5
+        pythagorean_cache[key] = pytCache(answer=answer, timer=cacheTimer)
+        return {"result": answer}
     elif b and c:
-        pythagorean_cache[key] = ((c**2 - b**2)**0.5, cacheTimer)
-        return {"result": (c**2 - b**2)**0.5}
+        answer : float = (c**2 - b**2)**0.5
+        pythagorean_cache[key] = pytCache(answer= answer, timer=cacheTimer)
+        return {"result": answer}
     raise HTTPException(status_code=400, detail="Invalid input")
 
 def cache_cleaner():
@@ -66,11 +73,11 @@ def cache_cleaner():
         wait(1)
         # runs every second to decrease the cachetimer and remove the old posts
         for key in list(pythagorean_cache.keys()):
-            pythagorean_cache[key] = (pythagorean_cache[key][0], pythagorean_cache[key][1] - 1)
-            if pythagorean_cache[key][1] <= 0:
+            pythagorean_cache[key].timer -= 1
+            if pythagorean_cache[key].timer <= 0:
                 # remove cache
-                print(f"Removed cache {key}, {pythagorean_cache[key][0]}")
+                print(f"Removed cache {key}, {pythagorean_cache[key].answer}")
                 pythagorean_cache.pop(key)
 
 # Start the cache cleaner in a new thread
-threading.Thread(target=cache_cleaner, daemon=True).start()
+threading.Thread(target=cache_cleaner, daemon=False).start()
